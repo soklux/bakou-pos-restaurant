@@ -32,7 +32,12 @@ class ReportController extends Controller
                 'users' => array('*'),
             ),
             array('allow', // allow authenticated user to perform 'create' and 'update' actions
-                'actions' => array('create', 'UserLogDt', 'ReportTab', 'SaleInvoiceItem', 'SaleInvoice', 'SaleInvoiceAlert', 'SaleDaily', 'SaleReportTab', 'SaleSummary', 'Payment', 'TopProduct', 'SaleHourly', 'Inventory', 'ItemExpiry', 'DailyProfit', 'ItemInactive', 'Transaction', 'TransactionItem', 'ItemAsset', 'SaleItemSummary','UserLogSummary'),
+                'actions' => array('create', 'UserLogDt', 'ReportTab', 'SaleInvoiceItem',
+                    'SaleInvoice', 'SaleInvoiceAlert', 'SaleDaily', 'SaleReportTab', 'SaleSummary',
+                    'Payment', 'TopProduct', 'SaleHourly', 'Inventory', 'ItemExpiry', 'DailyProfit',
+                    'ItemInactive', 'Transaction', 'TransactionItem', 'ItemAsset', 'SaleItemSummary',
+                    'UserLogSummary', 'SaleInvoiceDetail',
+                ),
                 'users' => array('@'),
             ),
             array('allow', // allow admin user to perform 'admin' and 'delete' actions
@@ -45,228 +50,95 @@ class ReportController extends Controller
         );
     }
 
-    /**
-     * Manages all models.
-     */
-    public function actionReportTab()
+    public function actionSaleInvoice()
     {
+        $this->canViewReport();
 
-        $report = new Report;
-        $report->unsetAttributes();  // clear any default values
-        $date_view = 0; //indicate no date picker from_date & to_date, default view is today 
-        $filter = 'all';
-        $mfilter = '1';
+        $grid_id = 'rpt-sale-invoice-grid';
+        $title = 'Sale Invoice';
 
-        if (isset($_GET['Report'])) {
-            $report->attributes = $_GET['Report'];
-            $from_date = $_GET['Report']['from_date'];
-            $to_date = $_GET['Report']['to_date'];
-        } else {
-            $from_date = date('d-m-Y');
-            $to_date = date('d-m-Y');
-        }
+        $data = $this->commonData($grid_id,$title,'show');
 
-        $report->from_date = $from_date;
-        $report->to_date = $to_date;
+        $data['grid_columns'] = ReportColumn::getSaleInvoiceColumns();
+        $data['data_provider'] = $data['report']->saleInvoice();
 
-        $this->render('_report_tab', array('report' => $report, 'from_date' => $from_date, 'to_date' => $to_date, 'date_view' => $date_view, 'filter' => $filter, 'mfilter' => $mfilter));
+        $this->renderView($data);
+
+
     }
 
-    /**
-     * Manages all models.
-     */
-    public function actionSaleReportTab()
+    public function actionSaleInvoiceDetail($id)
     {
+        $this->canViewReport();
 
         $report = new Report;
-        $report->unsetAttributes();  // clear any default values
-
-        if (isset($_GET['Report'])) {
-            $report->attributes = $_GET['Report'];
-            $from_date = $_GET['Report']['from_date'];
-            $to_date = $_GET['Report']['to_date'];
-        } else {
-            $from_date = date('01-m-Y');
-            $to_date = date('d-m-Y');
-        }
-
-        $report->from_date = $from_date;
-        $report->to_date = $to_date;
-
-        if (Yii::app()->request->isAjaxRequest) {
-            Yii::app()->clientScript->scriptMap['*.js'] = false;
-            Yii::app()->clientScript->scriptMap['*.css'] = false;
-            $this->renderPartial('_sale_report_tab', array('report' => $report), true, true);
-            Yii::app()->end();
-        } else {
-            $this->render('_sale_report_tab', array('report' => $report, 'from_date' => $from_date, 'to_date' => $to_date));
-        }
-    }
-
-    /**
-     * Manages all models.
-     */
-    public function actionSaleInvoice($period = 'today')
-    {
-        $report = new Report;
-
-        if (isset($_GET['Report'])) {
-            $from_date = $_GET['Report']['from_date'];;
-            $to_date = $_GET['Report']['to_date'];;
-        } else {
-            $from_date = date('d-m-Y');
-            $to_date = date('d-m-Y');
-        }
 
         $data['report'] = $report;
-        $data['from_date'] = $from_date;
-        $data['to_date'] = $to_date;
-        $data['grid_id'] = 'sale-invoice-grid';
-        $data['title'] = 'Sale Invoice';
+        $data['sale_id'] = $id;
 
-        $data['grid_columns'] = array(
-            array('name'=>'id',
-                'header'=>Yii::t('app','Invoice ID'),
-                'value'=>'$data["id"]',
-            ),
-            array('name'=>'sale_time',
-                'header'=>Yii::t('app','Sale Time'),
-                'value'=>'$data["sale_time"]',
-            ),
-            array('name'=>'sub_total',
-                'header'=>Yii::t('app','Sub Total'),
-                'value' =>'number_format($data["sub_total"],Yii::app()->shoppingCart->getDecimalPlace(), ".", ",")',
-                'htmlOptions'=>array('style' => 'text-align: right;'),
-                'headerHtmlOptions'=>array('style' => 'text-align: right;'),
-            ),
-            array('name'=>'discount',
-                'header'=>Yii::t('app','Discount'),
-                'value' =>'number_format($data["discount_amount"],Yii::app()->shoppingCart->getDecimalPlace(), ".", ",")',
-                'htmlOptions'=>array('style' => 'text-align: right;'),
-                'headerHtmlOptions'=>array('style' => 'text-align: right;'),
-            ),
-            array('name'=>'total',
-                'header'=>Yii::t('app','Total'),
-                'value' =>'number_format($data["total"],Yii::app()->shoppingCart->getDecimalPlace(), ".", ",")',
-                'htmlOptions'=>array('style' => 'text-align: right;'),
-                'headerHtmlOptions'=>array('style' => 'text-align: right;'),
-            ),
-            array('name'=>'quantity',
-                'header'=>Yii::t('app','QTY'),
-                'value' =>'number_format($data["quantity"],Yii::app()->shoppingCart->getDecimalPlace(), ".", ",")',
-                'htmlOptions'=>array('style' => 'text-align: right;'),
-                'headerHtmlOptions'=>array('style' => 'text-align: right;'),
-            ),
-            array('name'=>'employee_id',
-                'header'=>Yii::t('app','Sold By'),
-                'value'=>'$data["employee_id"]',
-            ),
-            array('name'=>'customer_id',
-                'header'=>Yii::t('app','Sold To'),
-                'value'=>'$data["customer_id"]',
-            ),
-            array('name'=>'remark',
-                'header'=>Yii::t('app','Remark'),
-                'value'=>'$data["remark"]',
-            ),
-            array('name'=>'status',
-                'header'=>Yii::t('app','Status'),
-                'value'=>'$data["status"]',
-            ),
-        );
+        $data['grid_id'] = 'rpt-sale-invoice-grid';
+        $data['title'] = Yii::t('app','Sale Invoice Detail #') .' ' . $id  ;
 
+        $data['grid_columns'] = ReportColumn::getSaleInvoiceDetailColumns();
 
-        $report->from_date = $from_date;
-        $report->to_date = $to_date;
-        $data['data_provider'] = $report->saleInvoice();
+        $report->sale_id = $id;
+        $data['data_provider'] = $report->saleInvoiceDetail();
 
-        if (Yii::app()->request->isAjaxRequest) {
-            Yii::app()->clientScript->scriptMap['*.css'] = false;
-            Yii::app()->clientScript->scriptMap['*.js'] = false;
-            echo CJSON::encode(array(
-                'status' => 'success',
-                'div' => $this->renderPartial('partial/_grid', $data, true, false),
-            ));
-        }else {
-            $this->render('main',$data);
-        }
+        $this->renderView($data);
+
     }
 
     public function actionSaleDaily()
     {
-        $report = new Report;
 
-        if (isset($_GET['Report'])) {
-            $from_date = $_GET['Report']['from_date'];;
-            $to_date = $_GET['Report']['to_date'];;
-        } else {
-            $from_date = date('d-m-Y');
-            $to_date = date('d-m-Y');
-        }
+        $this->canViewReport();
 
-        $data['report'] = $report;
-        $data['from_date'] = $from_date;
-        $data['to_date'] = $to_date;
-        $data['grid_id'] = 'sale-daily-grid';
-        $data['title'] = 'Daily Sale';
+        $grid_id = 'rpt-sale-daily-grid';
+        $title = 'Sale Daily';
 
-        $data['grid_columns'] = array(
-            array('name'=>'date',
-                'header'=>Yii::t('app','Date'),
-                'value'=>'$data["date_report"]',
-            ),
-            array('name'=>'quantity',
-                'header'=>Yii::t('app','QTY'),
-                'htmlOptions'=>array('style' => 'text-align: right;'),
-                'headerHtmlOptions'=>array('style' => 'text-align: right;'),
-                'value' =>'number_format($data["quantity"],Yii::app()->shoppingCart->getDecimalPlace(), ".", ",")',
-                //'footer'=>number_format($report->saleDailyTotals()[0],Yii::app()->shoppingCart->getDecimalPlace(), ".", ","),
-                //'footerHtmlOptions'=>array('style' => 'text-align: right;'),
-            ),
-            array('name'=>'sub_total',
-                'header'=>Yii::t('app','Sub Total'),
-                'htmlOptions'=>array('style' => 'text-align: right;'),
-                'headerHtmlOptions'=>array('style' => 'text-align: right;'),
-                'value' =>'number_format($data["sub_total"],Yii::app()->shoppingCart->getDecimalPlace(), ".", ",")',
-                //'footer'=>Yii::app()->settings->get('site', 'currencySymbol') . number_format($report->saleDailyTotals()[1],Yii::app()->shoppingCart->getDecimalPlace(), ".", ","),
-                //'footerHtmlOptions'=>array('style' => 'text-align: right;'),
-            ),
-            array('name'=>'discount',
-                'header'=>Yii::t('app','Discount'),
-                'htmlOptions'=>array('style' => 'text-align: right;'),
-                'headerHtmlOptions'=>array('style' => 'text-align: right;'),
-                'value' =>'number_format($data["discount_amount"],Yii::app()->shoppingCart->getDecimalPlace(), ".", ",")',
-                //'footer'=> Yii::app()->settings->get('site', 'currencySymbol') . number_format($report->saleDailyTotals()[2],Yii::app()->shoppingCart->getDecimalPlace(), ".", ","),
-                //'footerHtmlOptions'=>array('style' => 'text-align: right;'),
-            ),
-            array('name'=>'total',
-                'header'=>Yii::t('app','Total'),
-                'htmlOptions'=>array('style' => 'text-align: right;'),
-                'headerHtmlOptions'=>array('style' => 'text-align: right;'),
-                'value' =>'number_format($data["total"],Yii::app()->shoppingCart->getDecimalPlace(), ".", ",")',
-                //'footer'=> Yii::app()->settings->get('site', 'currencySymbol') . number_format($report->saleDailyTotals()[3],Yii::app()->shoppingCart->getDecimalPlace(), ".", ","),
-                //'footerHtmlOptions'=>array('style' => 'text-align: right;'),
-            ),
-        );
+        $data = $this->commonData($grid_id,$title);
 
+        $data['grid_columns'] = ReportColumn::getSaleDailyColumns();
+        $data['data_provider'] = $data['report']->saleDaily();
 
-        $report->from_date = $from_date;
-        $report->to_date = $to_date;
-        $data['data_provider'] = $report->saleDaily();
+        $this->renderView($data);
+    }
 
-        if (Yii::app()->request->isAjaxRequest) {
-            Yii::app()->clientScript->scriptMap['*.css'] = false;
-            Yii::app()->clientScript->scriptMap['*.js'] = false;
-            echo CJSON::encode(array(
-                'status' => 'success',
-                'div' => $this->renderPartial('partial/_grid', $data, true, false),
-            ));
-        }else {
-            $this->render('main',$data);
-        }
+    public function actionSaleItemSummary()
+    {
+        $this->canViewReport();
+
+        $grid_id = 'rpt-sale-item-summary-grid';
+        $title = 'Sale Item Summary';
+
+        $data = $this->commonData($grid_id,$title);
+
+        $data['grid_columns'] = ReportColumn::getSaleItemSummaryColumns();
+        $data['data_provider'] = $data['report']->saleItemSummary();
+
+        $this->renderView($data);
+
+    }
+
+    public function actionUserLogSummary($period = 'today')
+    {
+        $this->canViewReport();
+
+        $grid_id = 'rpt-user-log-summary-grid';
+        $title = 'User Log Summary';
+
+        $data = $this->commonData($grid_id,$title);
+
+        $data['grid_columns'] = ReportColumn::getUserLogSummaryColumns();
+        $data['data_provider'] = $data['report']->UserLogSummary();
+
+        $this->renderView($data);
     }
 
 
+
+
+    
     public function actionSaleInvoiceItem($sale_id, $employee_id)
     {
         $model = new SaleItem('search');
@@ -412,9 +284,6 @@ class ReportController extends Controller
         }
     }
 
-    /**
-     * Manages all models.
-     */
     public function actionSaleSummary()
     {
 
@@ -646,118 +515,8 @@ class ReportController extends Controller
         $report = new Report;
         $this->render('item_asset', array('report' => $report));
     }
-
-    public function actionSaleItemSummary()
-    {
-        $report = new Report;
-
-        if (isset($_GET['Report'])) {
-            $from_date = $_GET['Report']['from_date'];;
-            $to_date = $_GET['Report']['to_date'];;
-        } else {
-            $from_date = date('d-m-Y');
-            $to_date = date('d-m-Y');
-        }
-
-        $data['report'] = $report;
-        $data['from_date'] = $from_date;
-        $data['to_date'] = $to_date;
-        $data['grid_id'] = 'sale-item-summary-grid';
-        $data['title'] = 'Sale Item Summary';
-
-        $data['grid_columns'] = array(
-            array('name'=>'item_name',
-                'header'=>Yii::t('app','Item Name'),
-                'value'=>'$data["item_name"]',
-                'headerHtmlOptions'=>array('style' => 'text-align: right;'),
-                'htmlOptions'=>array('style' => 'text-align: right;'),
-            ),
-            array('name'=>'date_report',
-                'header'=>Yii::t('app','Date'),
-                'value' =>'$data["date_report"]',
-            ),
-            array('name'=>'quantity',
-                'header'=>Yii::t('app','QTY'),
-                'value' =>'number_format($data["quantity"],Yii::app()->shoppingCart->getDecimalPlace(), ".", ",")',
-                'htmlOptions'=>array('style' => 'text-align: right;'),
-                'headerHtmlOptions'=>array('style' => 'text-align: right;'),
-            ),
-            array('name'=>'sub_total',
-                'header'=>Yii::t('app','Sub Total'),
-                'value' =>'number_format($data["sub_total"],Yii::app()->shoppingCart->getDecimalPlace(), ".", ",")',
-                'htmlOptions'=>array('style' => 'text-align: right;'),
-                'headerHtmlOptions'=>array('style' => 'text-align: right;'),
-            ),
-        );
-
-
-        $report->from_date = $from_date;
-        $report->to_date = $to_date;
-        $data['data_provider'] = $report->saleItemSummary();
-
-        if (Yii::app()->request->isAjaxRequest) {
-            Yii::app()->clientScript->scriptMap['*.css'] = false;
-            Yii::app()->clientScript->scriptMap['*.js'] = false;
-            echo CJSON::encode(array(
-                'status' => 'success',
-                'div' => $this->renderPartial('partial/_grid', $data, true, false),
-            ));
-        }else {
-            $this->render('main',$data);
-        }
-    }
     
-    public function actionUserLogSummary($period = 'today')
-    {
-        $report = new Report;
 
-        if (isset($_GET['Report'])) {
-            $from_date = $_GET['Report']['from_date'];;
-            $to_date = $_GET['Report']['to_date'];;
-        } else {
-            $from_date = date('d-m-Y');
-            $to_date = date('d-m-Y');
-        }
-
-        $data['report'] = $report;
-        $data['from_date'] = $from_date;
-        $data['to_date'] = $to_date;
-        $data['grid_id'] = 'user-log-summary-grid';
-        $data['title'] = 'User Log Summary';
-
-        $data['grid_columns'] = array(
-            array('name'=>'fullname',
-                'header'=>Yii::t('app','Full Name'),
-                'value'=>'$data["fullname"]',
-            ),
-            array('name'=>'date_log',
-                'header'=>Yii::t('app','Date Log'),
-                'value' =>'$data["date_log"]',
-            ),
-            array('name'=>'nlog',
-                'header'=>Yii::t('app','# Log'),
-                'value' =>'number_format($data["nlog"],Yii::app()->shoppingCart->getDecimalPlace(), ".", ",")',
-                'htmlOptions'=>array('style' => 'text-align: right;'),
-                'headerHtmlOptions'=>array('style' => 'text-align: right;'),
-            ),
-        );
-
-
-        $report->from_date = $from_date;
-        $report->to_date = $to_date;
-        $data['data_provider'] = $report->UserLogSummary();
-
-        if (Yii::app()->request->isAjaxRequest) {
-            Yii::app()->clientScript->scriptMap['*.css'] = false;
-            Yii::app()->clientScript->scriptMap['*.js'] = false;
-            echo CJSON::encode(array(
-                'status' => 'success',
-                'div' => $this->renderPartial('partial/_grid', $data, true, false),
-            ));
-        }else {
-            $this->render('main',$data);
-        }
-    }
     
     public function actionUserLogDt($employee_id,$full_name)
     {
@@ -788,6 +547,74 @@ class ReportController extends Controller
         } else {
             $this->render('user_log_dt', array('model' => $model,'employee_id' => $employee_id,'full_name' => $full_name,));
         }
+    }
+
+
+    /**
+     * @param $data
+     * @param $view_name
+     * @throws CException
+     */
+    protected function renderView($data, $view_name='index')
+    {
+        if (Yii::app()->request->isAjaxRequest && !isset($_GET['ajax']) ) {
+            Yii::app()->clientScript->scriptMap['*.css'] = false;
+            Yii::app()->clientScript->scriptMap['*.js'] = false;
+
+            /*
+            echo CJSON::encode(array(
+                'status' => 'success',
+                'div' => $this->renderPartial('partial/_grid', $data, true, false),
+            ));
+            */
+            $this->renderPartial('partial/_grid', $data);
+        } else {
+            $this->render($view_name, $data);
+        }
+    }
+
+    protected function renderSubView($data)
+    {
+        $this->renderPartial('partial/_grid', $data);
+    }
+
+    protected function canViewReport()
+    {
+        if (!Yii::app()->user->checkAccess('report.index')) {
+            throw new CHttpException(403, 'You are not authorized to perform this action');
+        }
+    }
+
+    /**
+     * @param $grid_id
+     * @param $title
+     * @param $advance_search :  to indicate whether there is an advance search text box
+     * @param $header_view
+     * @param $grid_view
+     * @return mixed
+     */
+    protected function commonData($grid_id,$title,$advance_search=null,$header_view='_header',$grid_view='_grid')
+    {
+        $report = new Report;
+
+        $data['report'] = $report;
+        $data['from_date'] = isset($_GET['Report']['from_date']) ? $_GET['Report']['from_date'] : date('d-m-Y');
+        $data['to_date'] = isset($_GET['Report']['to_date']) ? $_GET['Report']['to_date'] : date('d-m-Y');
+        $data['search_id'] = isset($_GET['Report']['search_id']) ? $_GET['Report']['search_id'] : '';
+        $data['advance_search'] = $advance_search;
+        $data['header_tab'] = '';
+
+        $data['grid_id'] = $grid_id;
+        $data['title'] = Yii::t('app', $title) . ' ' . Yii::t('app',
+                'From') . ' ' . $data['from_date'] . '  ' . Yii::t('app', 'To') . ' ' . $data['to_date'];
+        $data['header_view'] = $header_view;
+        $data['grid_view'] = $grid_view;
+
+        $data['report']->from_date = $data['from_date'];
+        $data['report']->to_date = $data['to_date'];
+        $data['report']->search_id = $data['search_id'];
+
+        return $data;
     }
     
 

@@ -43,4 +43,6 @@
     po.src = 'https://apis.google.com/js/platform.js';
     var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(po, s);
   })();
-</script>  
+</script>
+
+<div class="waiting"><!-- Place at bottom of page --></div>

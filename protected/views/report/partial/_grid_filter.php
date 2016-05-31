@@ -9,4 +9,5 @@
     'dataProvider' => $data_provider,
     'template' => "{items}\n{exportbuttons}\n",
     'columns' => $grid_columns,
+    'filter' => $report,
 ));

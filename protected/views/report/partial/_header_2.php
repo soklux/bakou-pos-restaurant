@@ -1,3 +1,15 @@
+<?php
+/*
+|-----------------------------------------------------
+| Report Template II
+|-----------------------------------------------------
+|
+| Two block header search box & date range
+| Content as grid
+|
+*/
+?>
+
 <div id="report_header">
     <?php $form = $this->beginWidget('bootstrap.widgets.TbActiveForm', array(
         'id' => 'report-form',
@@ -7,11 +19,10 @@
         'layout' => TbHtml::FORM_LAYOUT_INLINE,
     )); ?>
 
-        <?php if ($advance_search!==null) { ?>
-            <?php $this->renderPartial('partial/_advance_search', array(
-                'report' => $report,
-            )); ?>
-        <?php } ?>
+        <?php $this->renderPartial('partial/_header_search_box', array(
+            'report' => $report,
+            'hint_text' => $hint_text,
+        )); ?>
 
         <?php $this->renderPartial('partial/_header_date_range', array(
             'report' => $report,

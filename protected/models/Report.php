@@ -27,6 +27,7 @@ class Report extends CFormModel
     public $sale_id;
     public $receive_id;
     public $employee_id;
+    public $search_id;
 
     /**
      * Returns the static model of the specified AR class.
@@ -76,74 +77,70 @@ class Report extends CFormModel
         );
     }
 
-    /**
-     * @return array relational rules.
-     */
-    public function relations()
-    {
-        // NOTE: you may need to adjust the relation name and the related
-        // class name for the relations automatically generated below.
-        return array(
-            'supplier' => array(self::BELONGS_TO, 'Supplier', 'supplier_id'),
-        );
-    }
-
     public function saleInvoice()
     {
+        if ($this->search_id !== '') {
 
-        if (isset($this->sale_id)) {
+            $sql = "SELECT sale_id,sale_time,employee_name,employee_id,client_id,location_name_kh,
+                      0 quantity,sub_total,discount_amount,vat_amount,total,status,status_f
+                    FROM v_sale_meta
+                    WHERE (sale_id=:search_id AND location_id=:location_id )
+                    -- OR (c_first_name like :first_name OR c_last_name like :last_name OR client_name like :full_name )
+                    ORDER By sale_time desc";
 
-            $sql = "SELECT id,sale_time,sub_total,discount_amount,(sub_total-discount_amount) total,quantity,
-                       (SELECT CONCAT_WS(' ',first_name,last_name) FROM `client` c WHERE c.id=s.client_id) customer_id,
-                       (SELECT CONCAT_WS(' ',first_name,last_name) FROM employee e WHERE e.id=s.employee_id) employee_id,
-                       status,remark
-                 FROM (SELECT s.id,DATE_FORMAT(s.sale_time,'%d-%m-%Y %H-%i') sale_time,s.client_id,s.employee_id,
-                             sum(s.sub_total) sub_total, SUM(sm.quantity) quantity,
-                             status_f status,remark,
-                             sum(discount_amount) discount_amount
-                      FROM v_sale s, v_sale_item_sum sm
-                      WHERE s.id=sm.sale_id
-                      AND s.location_id=sm.location_id
-                      AND s.location_id=:location_id
-                      and s.id=:sale_id
-                      GROUP BY s.id,s.client_id,s.employee_id,DATE_FORMAT(s.sale_time,'%d-%m-%Y %H-%i')
-                 ) AS s";
+            $rawData = Yii::app()->db->createCommand($sql)->queryAll(true, array(
+                    ':search_id' => $this->search_id,
+                    //':first_name' => '%' . $this->search_id . '%',
+                    //':last_name' => '%' . $this->search_id . '%',
+                    //':full_name' => '%' . $this->search_id . '%',
+                    ':location_id' => Common::getCurLocationID(),
+                )
+            );
 
-            $rawData = Yii::app()->db->createCommand($sql)->queryAll(true, array(':sale_id' => $this->sale_id));
         } else {
 
-            $sql = "SELECT id,sale_time,sub_total,discount_amount,(sub_total-discount_amount) total,quantity,
-                      (SELECT CONCAT_WS(' ',first_name,last_name) FROM `client` c WHERE c.id=s.client_id) customer_id,
-                       (SELECT CONCAT_WS(' ',first_name,last_name) FROM employee e WHERE e.id=s.employee_id) employee_id,
-                       status,remark
-                 FROM (SELECT s.id,DATE_FORMAT(s.sale_time,'%d-%m-%Y %H-%i') sale_time,s.client_id,s.employee_id,
-                             sum(s.sub_total) sub_total, SUM(sm.quantity) quantity,
-                             status_f status,remark,
-                             sum(discount_amount) discount_amount
-                      FROM v_sale s, v_sale_item_sum sm
-                      WHERE s.id=sm.sale_id
-                      AND s.location_id=sm.location_id
-                      AND s.location_id=:location_id
-                      AND s.sale_time>=str_to_date(:from_date,'%d-%m-%Y')
-                      AND s.sale_time<=date_add(str_to_date(:to_date,'%d-%m-%Y'),INTERVAL 1 DAY)
-                      GROUP BY s.id,s.client_id,s.employee_id,DATE_FORMAT(s.sale_time,'%d-%m-%Y %H-%i')
-                 ) AS s";
+            $sql = "SELECT sale_id,sale_time,employee_name,employee_id,client_id,location_name_kh,
+                      0 quantity,sub_total,discount_amount,vat_amount,total,status,status_f
+                    FROM v_sale_meta
+                    WHERE location_id=:location_id
+                    AND sale_time>=str_to_date(:from_date,'%d-%m-%Y')
+                    AND sale_time<=date_add(str_to_date(:to_date,'%d-%m-%Y'),INTERVAL 1 DAY)
+                    ORDER By sale_time desc";
 
-            $rawData = Yii::app()->db->createCommand($sql)->queryAll(true,
-                array(
-                    ':from_date' => $this->from_date,
-                    ':to_date' => $this->to_date,
-                    ':location_id' => Yii::app()->getsetSession->getLocationId(),
-                ));
+
+            $rawData = Yii::app()->db->createCommand($sql)->queryAll(true, array(
+                ':from_date' => $this->from_date,
+                ':to_date' => $this->to_date,
+                ':location_id' => Common::getCurLocationID(),
+            ));
         }
 
         $dataProvider = new CArrayDataProvider($rawData, array(
-            //'id'=>'saleinvoice',
-            'keyField' => 'id',
+            'keyField' => 'sale_id',
             'sort' => array(
                 'attributes' => array(
-                    'sale_time',
-                    'amount',
+                    'sale_id', 'sale_time',
+                ),
+            ),
+            'pagination' => false,
+        ));
+
+        return $dataProvider;
+    }
+
+    public function saleInvoiceDetail()
+    {
+        $sql= "SELECT sale_id,item_id,name,quantity,price,description,sub_total
+               FROM v_sale_item
+               WHERE sale_id=:sale_id";
+
+        $rawData = Yii::app()->db->createCommand($sql)->queryAll(true, array(':sale_id' => $this->sale_id));
+
+        $dataProvider = new CArrayDataProvider($rawData, array(
+            'keyField' => 'sale_id',
+            'sort' => array(
+                'attributes' => array(
+                    'sale_id', 'sale_time',
                 ),
             ),
             'pagination' => false,
@@ -152,59 +149,34 @@ class Report extends CFormModel
         return $dataProvider; // Return as array object
     }
 
-    public function saleInvoiceAlert()
+    public function saleDaily()
     {
 
-        if (isset($this->sale_id)) {
-            $sql = "SELECT s.id,
-                             date_format(s.sale_time,'%d-%m-%Y %H-%i') sale_time,sum(quantity) quantity,
-                             sum(
-                             case 
-                                when discount_type='%' then (quantity*price-(quantity*price*discount_amount)/100) 
-                                else (quantity*price)-discount_amount
-                             end) amount, 
-                             (SELECT CONCAT_WS(' ',first_name,last_name) FROM `client` c WHERE c.id=s.client_id) customer_id,
-                             (SELECT concat_ws(' ',first_name,last_name) from employee e where e.id=s.employee_id) employee_id,
-                             remark
-                       FROM sale s INNER JOIN sale_item si ON si.`sale_id`=s.id 
-                       WHERE s.id=:sale_id
-                       AND IFNULL(s.status,'1')='1'
-                       GROUP BY s.id,date_format(s.sale_time,'%d-%m-%Y %H-%i')";
+        $sql = "SELECT DATE_FORMAT(s.sale_time,'%d-%m-%Y') date_report,SUM(s.sub_total) sub_total,
+               SUM(s.discount_amount) discount_amount,
+	           SUM(s.sub_total-s.discount_amount) total,SUM(sm.quantity) quantity
+            FROM v_sale s, v_sale_item_sum sm
+            WHERE s.id=sm.sale_id
+            AND s.location_id=sm.location_id
+            AND s.location_Id=:location_id
+            AND s.sale_time>=STR_TO_DATE(:from_date,'%d-%m-%Y') 
+            AND s.sale_time<=DATE_ADD(STR_TO_DATE(:to_date,'%d-%m-%Y'),INTERVAL 1 DAY)
+            AND s.status=:status
+            GROUP BY date_format(s.sale_time,'%d-%m-%Y')
+            WITH ROLLUP";
 
-            $rawData = Yii::app()->db->createCommand($sql)->queryAll(true, array(':sale_id' => $this->sale_id));
-        } else {
-            $sql = "SELECT id,sale_time,quantity,sub_total,amount,customer_id,employee_id,remark
-                      FROM (
-                      SELECT s.id,
-                             date_format(s.sale_time,'%d-%m-%Y %H-%i') sale_time,sum(quantity) quantity,
-                             sub_total,
-                             sum(
-                             case 
-                                when discount_type='%' then (quantity*price-(quantity*price*discount_amount)/100) 
-                                else (quantity*price)-discount_amount
-                             end) amount,
-                             (SELECT CONCAT_WS(' ',first_name,last_name) FROM `client` c WHERE c.id=s.client_id) customer_id,
-                             (SELECT concat_ws(' ',first_name,last_name) from employee e where e.id=s.employee_id) employee_id,
-                             remark
-                       FROM sale s INNER JOIN sale_item si ON si.`sale_id`=s.id 
-                       WHERE s.sale_time>=str_to_date(:from_date,'%d-%m-%Y')
-                       AND IFNULL(s.status,'1')='1'
-                       AND s.sale_time<=date_add(str_to_date(:to_date,'%d-%m-%Y'),INTERVAL 1 DAY)
-                       GROUP BY s.id,date_format(s.sale_time,'%d-%m-%Y %H-%i')
-                       ) as T1
-                       WHERE sub_total<>amount";
-
-            $rawData = Yii::app()->db->createCommand($sql)->queryAll(true,
-                array(':from_date' => $this->from_date, ':to_date' => $this->to_date));
-        }
+        $rawData = Yii::app()->db->createCommand($sql)->queryAll(true, array(
+            ':from_date' => $this->from_date,
+            ':to_date' => $this->to_date,
+            ':status' => Yii::app()->params['sale_complete_status'],
+            ':location_id' => Common::getCurLocationID(),
+        ));
 
         $dataProvider = new CArrayDataProvider($rawData, array(
-            //'id'=>'saleinvoice',
-            'keyField' => 'id',
+            'keyField' => 'date_report',
             'sort' => array(
                 'attributes' => array(
                     'sale_time',
-                    'amount',
                 ),
             ),
             'pagination' => false,
@@ -213,6 +185,75 @@ class Report extends CFormModel
         return $dataProvider; // Return as array object
     }
 
+    public function saleItemSummary()
+    {
+
+        $sql = "SELECT i.name item_name,CONCAT_WS(' - ',:from_date, :to_date) date_report,sub_total,t1.quantity
+            FROM (
+            SELECT sm.item_id,
+                   -- MIN(DATE_FORMAT(s.sale_time,'%d-%m-%Y')) from_date, MAX(DATE_FORMAT(s.sale_time,'%d-%m-%Y')) to_date,
+                   SUM(sm.quantity) quantity,SUM(sm.price*quantity) sub_total
+            FROM v_sale s , sale_item sm
+            WHERE s.id=sm.sale_id
+            AND s.location_id=sm.location_id
+            AND s.sale_time>=str_to_date(:from_date,'%d-%m-%Y')  
+            AND s.sale_time<date_add(str_to_date(:to_date,'%d-%m-%Y'),INTERVAL 1 DAY) 
+            AND s.status=:status
+            GROUP BY sm.item_id
+            ) t1 JOIN item i ON i.id=t1.item_id";
+
+        $rawData = Yii::app()->db->createCommand($sql)->queryAll(true, array(
+            ':from_date' => $this->from_date,
+            ':to_date' => $this->to_date,
+            ':status' => Yii::app()->params['sale_complete_status']
+        ));
+
+        $dataProvider = new CArrayDataProvider($rawData, array(
+            //'id'=>'saleinvoice',
+            'keyField' => 'item_name',
+            'sort' => array(
+                'attributes' => array(
+                    'date_report',
+                ),
+            ),
+            'pagination' => false,
+        ));
+
+        return $dataProvider; // Return as array object
+    }
+
+    public function userLogSummary()
+    {
+        $sql = "SELECT ul.`employee_id`,
+                UCASE(CONCAT(e.`first_name`,' ',e.`last_name`)) fullname,
+                DATE_FORMAT(`login_time`,'%d-%m-%Y') date_log,
+                COUNT(*) nlog
+            FROM `user_log` ul , employee e
+            WHERE ul.`employee_id`=e.`id`
+            AND ul.login_time>=str_to_date(:from_date,'%d-%m-%Y')  
+            AND ul.login_time<date_add(str_to_date(:to_date,'%d-%m-%Y'),INTERVAL 1 DAY)
+            GROUP BY ul.`employee_id`,CONCAT(e.`first_name`,' ',e.`last_name`),DATE_FORMAT(`login_time`,'%d-%m-%Y')";
+
+        $rawData = Yii::app()->db->createCommand($sql)->queryAll(true, array(
+            ':from_date' => $this->from_date,
+            ':to_date' => $this->to_date));
+
+        $dataProvider = new CArrayDataProvider($rawData, array(
+            //'id'=>'saleinvoice',
+            'keyField' => 'employee_id',
+            'sort' => array(
+                'attributes' => array(
+                    'date_log',
+                ),
+            ),
+            'pagination' => false,
+        ));
+
+        return $dataProvider; // Return as array object
+    }
+
+
+    /*
     public function receiveInvoice()
     {
 
@@ -259,77 +300,6 @@ class Report extends CFormModel
         ));
 
         return $dataProvider; // Return as array object
-    }
-
-    public function saleDaily()
-    {
-
-        $sql = "SELECT DATE_FORMAT(s.sale_time,'%d-%m-%Y') date_report,SUM(s.sub_total) sub_total,
-               SUM(s.discount_amount) discount_amount,
-	           SUM(s.sub_total-s.discount_amount) total,SUM(sm.quantity) quantity
-            FROM v_sale s, v_sale_item_sum sm
-            WHERE s.id=sm.sale_id
-            AND s.location_id=sm.location_id
-            AND s.location_Id=:location_id
-            AND s.sale_time>=STR_TO_DATE(:from_date,'%d-%m-%Y') 
-            AND s.sale_time<=DATE_ADD(STR_TO_DATE(:to_date,'%d-%m-%Y'),INTERVAL 1 DAY)
-            AND s.status=:status
-            GROUP BY date_format(s.sale_time,'%d-%m-%Y')
-            WITH ROLLUP";
-
-        $rawData = Yii::app()->db->createCommand($sql)->queryAll(true, array(
-            ':from_date' => $this->from_date,
-            ':to_date' => $this->to_date,
-            ':status' => Yii::app()->params['sale_complete_status'],
-            ':location_id' => Yii::app()->getsetSession->getLocationId(),
-        ));
-
-        $dataProvider = new CArrayDataProvider($rawData, array(
-            'keyField' => 'date_report',
-            'sort' => array(
-                'attributes' => array(
-                    'sale_time',
-                ),
-            ),
-            'pagination' => false,
-        ));
-
-        return $dataProvider; // Return as array object
-    }
-
-    public function saleDailyTotals()
-    {
-        $sub_total = 0;
-        $discount_amount = 0;
-        $total = 0;
-        $quantity = 0;
-
-        $sql = "SELECT SUM(s.sub_total) sub_total,
-                     SUM(s.discount_amount) discount_amount,
-                     SUM(s.sub_total-s.discount_amount) total,
-                    SUM(sm.quantity) quantity
-            FROM v_sale s, v_sale_item_sum sm
-            WHERE s.id=sm.sale_id
-            AND s.location_id=sm.location_id
-            AND s.sale_time>=STR_TO_DATE(:from_date,'%d-%m-%Y') 
-            AND s.sale_time<=DATE_ADD(STR_TO_DATE(:to_date,'%d-%m-%Y'),INTERVAL 1 DAY)
-            AND s.status=:status";
-        //GROUP BY date_format(s.sale_time,'%d-%m-%Y')";
-
-        $result = Yii::app()->db->createCommand($sql)->queryAll(true, array(
-            ':from_date' => $this->from_date,
-            ':to_date' => $this->to_date,
-            ':status' => Yii::app()->params['sale_complete_status']
-        ));
-
-        foreach ($result as $record) {
-            $sub_total = $record['sub_total'];
-            $total = $record['total'];
-            $discount_amount = $record['discount_amount'];
-            $quantity = $record['quantity'];
-        }
-
-        return array($quantity, $sub_total, $discount_amount, $total);
     }
 
     public function topProduct()
@@ -738,7 +708,6 @@ class Report extends CFormModel
         return $result;
     }
 
-
     public function itemAsset()
     {
         $sql = "SELECT SUM(quantity) total_qty,SUM(cost_price*quantity) total_amount
@@ -795,71 +764,5 @@ class Report extends CFormModel
         return $dataProvider; // Return as array object
     }
 
-    public function saleItemSummary()
-    {
-
-        $sql = "SELECT i.name item_name,CONCAT_WS(' - ',:from_date, :to_date) date_report,sub_total,t1.quantity
-            FROM (
-            SELECT sm.item_id,
-                   -- MIN(DATE_FORMAT(s.sale_time,'%d-%m-%Y')) from_date, MAX(DATE_FORMAT(s.sale_time,'%d-%m-%Y')) to_date,
-                   SUM(sm.quantity) quantity,SUM(sm.price*quantity) sub_total
-            FROM v_sale s , sale_item sm
-            WHERE s.id=sm.sale_id
-            AND s.location_id=sm.location_id
-            AND s.sale_time>=str_to_date(:from_date,'%d-%m-%Y')  
-            AND s.sale_time<date_add(str_to_date(:to_date,'%d-%m-%Y'),INTERVAL 1 DAY) 
-            AND s.status=:status
-            GROUP BY sm.item_id
-            ) t1 JOIN item i ON i.id=t1.item_id";
-
-        $rawData = Yii::app()->db->createCommand($sql)->queryAll(true, array(
-            ':from_date' => $this->from_date,
-            ':to_date' => $this->to_date,
-            ':status' => Yii::app()->params['sale_complete_status']
-        ));
-
-        $dataProvider = new CArrayDataProvider($rawData, array(
-            //'id'=>'saleinvoice',
-            'keyField' => 'item_name',
-            'sort' => array(
-                'attributes' => array(
-                    'date_report',
-                ),
-            ),
-            'pagination' => false,
-        ));
-
-        return $dataProvider; // Return as array object
-    }
-
-    public function userLogSummary()
-    {
-        $sql = "SELECT ul.`employee_id`,
-                UCASE(CONCAT(e.`first_name`,' ',e.`last_name`)) fullname,
-                DATE_FORMAT(`login_time`,'%d-%m-%Y') date_log,
-                COUNT(*) nlog
-            FROM `user_log` ul , employee e
-            WHERE ul.`employee_id`=e.`id`
-            AND ul.login_time>=str_to_date(:from_date,'%d-%m-%Y')  
-            AND ul.login_time<date_add(str_to_date(:to_date,'%d-%m-%Y'),INTERVAL 1 DAY)
-            GROUP BY ul.`employee_id`,CONCAT(e.`first_name`,' ',e.`last_name`),DATE_FORMAT(`login_time`,'%d-%m-%Y')";
-
-        $rawData = Yii::app()->db->createCommand($sql)->queryAll(true,
-            array(':from_date' => $this->from_date, ':to_date' => $this->to_date));
-
-        $dataProvider = new CArrayDataProvider($rawData, array(
-            //'id'=>'saleinvoice',
-            'keyField' => 'employee_id',
-            'sort' => array(
-                'attributes' => array(
-                    'date_log',
-                ),
-            ),
-            'pagination' => false,
-        ));
-
-        return $dataProvider; // Return as array object
-    }
-
-
+    */
 }

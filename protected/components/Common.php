@@ -143,6 +143,17 @@ Class Common
     {
         return Yii::app()->user->getState('pageSize', Yii::app()->settings->get('item', 'itemNumberPerPage'));
     }
+
+    // Convention over configuration principle
+    public static function getDecimalPlace()
+    {
+        return Yii::app()->settings->get('system', 'decimalPlace') == '' ? 2 : Yii::app()->settings->get('system', 'decimalPlace');
+    }
+
+    public static function getCurLocationID()
+    {
+        return Yii::app()->getsetSession->getLocationId();
+    }
     
 }
 

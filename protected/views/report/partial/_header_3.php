@@ -7,18 +7,27 @@
         'layout' => TbHtml::FORM_LAYOUT_INLINE,
     )); ?>
 
-        <?php if ($advance_search!==null) { ?>
-            <?php $this->renderPartial('partial/_advance_search', array(
-                'report' => $report,
-            )); ?>
-        <?php } ?>
+    <?php $this->widget('bootstrap.widgets.TbNav', array(
+        'type' => TbHtml::NAV_TYPE_PILLS,
+        'htmlOptions'=>array('class'=>'btn-opt'),
+        'items' => $header_tab
+    )); ?>
 
-        <?php $this->renderPartial('partial/_header_date_range', array(
+    <br />
+
+    <?php if ($advance_search!==null) { ?>
+        <div>
+        <?php $this->renderPartial('partial/_advance_search', array(
             'report' => $report,
         )); ?>
 
         <?php $this->renderPartial('partial/_header_view_btn', array(
         )); ?>
+
+        </div>
+
+    <?php } ?>
+
 
     <?php $this->endWidget(); ?>
 
