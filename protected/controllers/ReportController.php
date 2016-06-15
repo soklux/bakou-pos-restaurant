@@ -57,7 +57,7 @@ class ReportController extends Controller
         $grid_id = 'rpt-sale-invoice-grid';
         $title = 'Sale Invoice';
 
-        $data = $this->commonData($grid_id,$title,'show');
+        $data = $this->commonData($grid_id,$title,'show','_header');
 
         $data['grid_columns'] = ReportColumn::getSaleInvoiceColumns();
         $data['data_provider'] = $data['report']->saleInvoice();
@@ -135,9 +135,7 @@ class ReportController extends Controller
         $this->renderView($data);
     }
 
-
-
-
+    
     
     public function actionSaleInvoiceItem($sale_id, $employee_id)
     {

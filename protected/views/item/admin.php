@@ -45,7 +45,8 @@ $('.search-form form').submit(function(){
 
         <?php if (Yii::app()->user->checkAccess('item.create')) { ?>
 
-            <?php echo TbHtml::linkButton(Yii::t('app', 'Add New'), array(
+            <?php echo TbHtml::linkButton(Yii::t('app', 'Add New
+            '), array(
                 'color' => TbHtml::BUTTON_COLOR_PRIMARY,
                 'size' => TbHtml::BUTTON_SIZE_SMALL,
                 'icon' => 'ace-icon fa fa-plus white',

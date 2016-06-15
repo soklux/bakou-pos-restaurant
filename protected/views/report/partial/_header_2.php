@@ -21,7 +21,7 @@
 
         <?php $this->renderPartial('partial/_header_search_box', array(
             'report' => $report,
-            'hint_text' => $hint_text,
+            'hint_text' => !isset($hint_text) ? 'Type Anything' : $hint_text,
         )); ?>
 
         <?php $this->renderPartial('partial/_header_date_range', array(

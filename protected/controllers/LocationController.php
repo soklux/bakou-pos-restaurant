@@ -78,23 +78,23 @@ class LocationController extends Controller
 	 */
 	public function actionCreate()
 	{
-            if (Yii::app()->user->checkAccess('branch.create')) {
-                $model=new Location;
-                
-		if (isset($_POST['Location'])) {
-			$model->attributes=$_POST['Location'];
-			if ($model->save()) {
-                            //$this->redirect(array('view','id'=>$model->id));
-                            $this->redirect(array('admin'));
-			}
-		}
+		if (Yii::app()->user->checkAccess('branch.create')) {
+			$model = new Location;
 
-		$this->render('create',array(
-			'model'=>$model,
-		));
-            } else {
-                throw new CHttpException(403, 'You are not authorized to perform this action');
-            }
+			if (isset($_POST['Location'])) {
+				$model->attributes = $_POST['Location'];
+				if ($model->save()) {
+					//$this->redirect(array('view','id'=>$model->id));
+					$this->redirect(array('admin'));
+				}
+			}
+
+			$this->render('create', array(
+				'model' => $model,
+			));
+		} else {
+			throw new CHttpException(403, 'You are not authorized to perform this action');
+		}
 	}
 
 	/**
@@ -104,25 +104,22 @@ class LocationController extends Controller
 	 */
 	public function actionUpdate($id)
 	{
-            if (Yii::app()->user->checkAccess('branch.update')) {
-                $model=$this->loadModel($id);
+		if (Yii::app()->user->checkAccess('branch.update')) {
+			$model = $this->loadModel($id);
 
-		// Uncomment the following line if AJAX validation is needed
-		// $this->performAjaxValidation($model);
-
-		if (isset($_POST['Location'])) {
-			$model->attributes=$_POST['Location'];
-			if ($model->save()) {
-                            $this->redirect(array('admin'));
+			if (isset($_POST['Location'])) {
+				$model->attributes = $_POST['Location'];
+				if ($model->save()) {
+					$this->redirect(array('admin'));
+				}
 			}
-		}
 
-		$this->render('update',array(
-			'model'=>$model,
-		));
-            } else {
-                throw new CHttpException(403, 'You are not authorized to perform this action');
-            }
+			$this->render('update', array(
+				'model' => $model,
+			));
+		} else {
+			throw new CHttpException(403, 'You are not authorized to perform this action');
+		}
 	}
 
 	/**

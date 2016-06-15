@@ -19,7 +19,7 @@
 <br />
 
 <!-- Flash message layouts.partial._flash_message -->
-<?php //$this->renderPartial('//layouts/partial/_flash_message'); ?>
+<?php $this->renderPartial('//layouts/alert/_flash'); ?>
 
 <div id="report_grid">
 

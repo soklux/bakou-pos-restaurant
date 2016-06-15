@@ -42,31 +42,19 @@
     <![endif]-->
     
     <link rel="stylesheet" type="text/css" href="<?php echo $baseUrl ?>/css/jquery-ui-1.10.4.custom.min.css" />
-    <!--<link rel="stylesheet" type="text/css" href="<?php /*echo $baseUrl */?>/css/keyboard.css" />-->
     <link rel="stylesheet" type="text/css" href="<?php echo $baseUrl ?>/css/loading_animation.css" />
-    <!--<link rel="stylesheet" type="text/css" href="<?php /*echo $baseUrl */?>/css/jquery.bxslider.css" />-->
     <link rel="stylesheet" type="text/css" href="<?php echo $baseUrl ?>/css/select2.css" />
     
-    <!-- ace settings handler -->
-    <?php //$cs->registerScriptFile($baseUrl.'/js/bootstrap.min.js',CClientScript::POS_END); ?> 
-   
     <?php
+        $cs->registerScriptFile($baseUrl.'/js/app.min.js',CClientScript::POS_END);
+        /*
         $cs->registerScriptFile($baseUrl.'/js/ace-extra.min.js',CClientScript::POS_END);
-        //$cs->registerScriptFile($baseUrl.'/js/jquery-ui.custom.min.js',CClientScript::POS_END); 
-        //$cs->registerScriptFile($baseUrl.'/js/jquery.ui.touch-punch.min.js',CClientScript::POS_END);
-        $cs->registerScriptFile($baseUrl.'/js/jquery.slimscroll.min.js',CClientScript::POS_END); 
-        //$cs->registerScriptFile($baseUrl.'/js/jquery.bxslider.min.js',CClientScript::POS_END); 
-        //$cs->registerScriptFile($baseUrl.'/js/jquery.colorbox-min.js',CClientScript::POS_END);
         $cs->registerScriptFile($baseUrl.'/js/ace-elements.min.js',CClientScript::POS_END);  
         $cs->registerScriptFile($baseUrl.'/js/ace.min.js',CClientScript::POS_END);
         $cs->registerScriptFile($baseUrl.'/js/jquery.gritter.min.js',CClientScript::POS_END);
-        //$cs->registerScriptFile($baseUrl.'/js/bootbox.min.js',CClientScript::POS_END);
-        //$cs->registerScriptFile($baseUrl.'/js/jquery.jkey.min.js',CClientScript::POS_END);
-        //$cs->registerScriptFile($baseUrl.'/js/common.js',CClientScript::POS_END);
-        //$cs->registerScriptFile($baseUrl.'/js/jquery.keyboard.min.js',CClientScript::POS_END);
-        //$cs->registerScriptFile($baseUrl.'/js/holder.js',CClientScript::POS_HEAD);
         $cs->registerScriptFile($baseUrl.'/js/select2.min.js',CClientScript::POS_END);
         $cs->registerScriptFile($baseUrl.'/js/jquery.form.min.js',CClientScript::POS_END);
+        */
     ?>
 
     <?php 
